@@ -1,0 +1,25 @@
+sources:
+  - label: The Changelog
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/The Changelog'
+    destination: "#{destination}/Podcasts/The Changelog"
+    keep: 5
+  - label: The Dev Show
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/The Dev Show'
+    destination: "#{destination}/Podcasts/The Dev Show"
+    keep: 5
+  - label: The Ruby Show
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/The Ruby Show'
+    destination: "#{destination}/Podcasts/The Ruby Show"
+    keep: 5
+  - label: Ruby5
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/Ruby5'
+    destination: "#{destination}/Podcasts/Ruby5"
+    keep: 5
+  - label: RubyPulse (ipod Version)
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/RubyPulse (ipod Version)'
+    destination: "#{destination}/Podcasts/RubyPulse"
+    keep: 10
+  - label: Railscasts
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/Railscasts (iPod & Apple TV)'
+    destination: "#{destination}/Podcasts/Railscasts"
+    keep: 20
