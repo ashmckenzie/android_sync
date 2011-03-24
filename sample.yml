@@ -1,0 +1,5 @@
+sources:
+  - label: The Changelog
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/The Changelog'
+    destination: "#{destination}/Podcasts/The Changelog"
+    keep: 5

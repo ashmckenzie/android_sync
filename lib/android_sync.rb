@@ -16,11 +16,21 @@ class AndroidSync
   #
   DEFAULT_CONFIG = File.dirname(__FILE__) + '/../android_sync.yml'
 
+  # Pretend / dry-run mode
+  #
+  DEFAULT_PRETEND = false
+
+  DEFAULT_VERBOSE = true
+
+  DEFAULT_DEBUG = false
+
   def initialize(opts)  # :nodoc:
 
     @destination = opts[:destination]
     @config_file = opts[:config] || DEFAULT_CONFIG
-    @verbose = opts[:verbose] || true
+    @pretend = opts[:pretend] || DEFAULT_PRETEND
+    @verbose = opts[:verbose] || DEFAULT_VERBOSE
+    @debug = opts[:debug] || DEFAULT_DEBUG
 
     @config = YAML.load_file(@config_file)
   end
@@ -31,13 +41,15 @@ class AndroidSync
 
     puts
 
+    destination = @destination.trim('/')
+
     @config['sources'].each do |source|
 
-      puts "- Attempting to sync #{source['label']}"
-            
-      destination = @destination.trim('/')
+      puts "- Looking at #{source['label']}"
       
       final_destination = eval('"' + source['destination'] + '"').trim('/') + '/'
+      FileUtils.mkdir_p(final_destination) unless File.directory?(final_destination) and @pretend
+
       all_new_files = Dir.glob("#{source['source'].trim('/')}/*").sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }
 
       unless source['keep'].nil?
@@ -46,28 +58,39 @@ class AndroidSync
         new_files = all_new_files
       end
 
-      new_files.each do |file|
-        next if File.exists?("#{final_destination}/#{File.basename(file)}")
-        cmd = "rsync -vax \"#{file}\" \"#{final_destination}\""
-        puts "+ Syncing '#{File.basename(file)}' to '#{final_destination}'" if @verbose
-        output = `#{cmd}`
-      end
+      sync_files(new_files, final_destination)
 
-      unless source['keep'].nil?
-
-        existing_files = Dir.glob("#{final_destination}*").sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }.reject do |file|
-          new_files.collect { |x| File.basename(x) }.include?(File.basename(file))
-        end
-
-        existing_files.each do |file|
-          puts "! Removing '#{file}'"
-          FileUtils.rm_f(file)
-        end
-
-      end
+      cleanup(final_destination, new_files) unless source['keep'].nil?
 
       puts
 
+    end
+
+  end
+
+  private
+
+  def sync_files(new_files, destination)
+
+    new_files.each do |file|
+      next if File.exists?("#{destination}/#{File.basename(file)}")
+      cmd = "rsync -vax#{@pretend ? 'n' : ''} \"#{file}\" \"#{destination}\""
+      puts "+ Syncing '#{File.basename(file)}' to '#{destination}'" if @verbose
+      output = `#{cmd}`
+      puts "# #{cmd}" if @debug
+    end
+
+  end
+
+  def cleanup(destination, new_files)
+
+    existing_files = Dir.glob("#{destination}*").sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }.reject do |file|
+      new_files.collect { |x| File.basename(x) }.include?(File.basename(file))
+    end
+
+    existing_files.each do |file|
+      puts "! Removing '#{file}'"
+      FileUtils.rm_f(file) unless @pretend
     end
 
   end
