@@ -8,7 +8,7 @@ require 'pp'
 
 require File.dirname(__FILE__) + '/../lib/android_sync'
 
-describe "Android sync" do
+describe AndroidSync do
 
   include FakeFS::SpecHelpers
 
@@ -73,7 +73,7 @@ describe "Android sync" do
     destination_files.should =~ source_files
   end
 
-  describe "" do
+  describe :cleanup do
 
     before :each do
       @new_destination_files = @d_files.collect { |x| x = "#{@destination}/#{x}" }.each do |s|

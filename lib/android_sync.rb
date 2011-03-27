@@ -52,11 +52,11 @@ class AndroidSync
   # Sync a bunch of stuff to an Android device (essentially a mounted volume)
   #
   def run
-    puts
+    puts if @verbose
     @config['sources'].each do |s|
-      puts "- Looking at #{s['label']}"
+      puts "- Looking at #{s['label']}" if @verbose
       perform_sync(s['source'], s['destination'], s['keep'])
-      puts
+      puts if @verbose
     end
   end
 
