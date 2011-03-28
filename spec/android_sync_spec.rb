@@ -4,7 +4,6 @@ require 'fileutils'
 require 'fakefs'
 require 'fakefs/safe'
 require 'fakefs/spec_helpers'
-require 'pp'
 
 require File.dirname(__FILE__) + '/../lib/android_sync'
 
