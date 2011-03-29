@@ -1,5 +1,6 @@
 require 'rubygems'
 require 'rspec'
+require 'spec_helper'
 require 'fileutils'
 require 'fakefs'
 require 'fakefs/safe'

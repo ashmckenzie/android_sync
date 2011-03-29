@@ -4,7 +4,7 @@ namespace :test do
 
   desc "Run tests"
   task :run do
-    puts %x(rspec -c -f d spec/*.rb)
+    puts %x(rspec -c -f d spec/*_spec.rb)
   end
   
   namespace :coverage do
