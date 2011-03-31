@@ -52,7 +52,7 @@ class AndroidSync
     puts unless @quiet
     @config['sources'].each do |s|
       puts "- Looking at #{s['label']}" unless @quiet
-      perform_sync(s['source'], s['destination'], s['keep'])
+      perform_sync(s['source'].rtrim('/'), s['destination'].rtrim('/'), s['keep'])
       puts unless @quiet
     end
   end
@@ -107,8 +107,12 @@ class AndroidSync
       next if File.exists?(destination_file)
       puts "+ Copying '#{File.basename(file)}' to '#{destination_file}'" unless @quiet
       puts "DEBUG: Copying '#{file} to '#{destination_file}'" if @debug
-
       if @forreal
+        file_parent = destination_file.split(/\//)[0...-1].join('/')
+        puts "DEBUG: file_parent=[#{file_parent}]" if @debug
+        if ! File.exist?(file_parent)
+          FileUtils.mkdir_p(file_parent)
+        end
         FileUtils.cp(file, destination_file)
       end
     end
