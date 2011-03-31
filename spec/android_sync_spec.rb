@@ -1,7 +1,4 @@
-require 'rubygems'
-require 'rspec'
 require 'spec_helper'
-require 'fileutils'
 require 'fakefs'
 require 'fakefs/safe'
 require 'fakefs/spec_helpers'
@@ -45,7 +42,8 @@ describe AndroidSync do
     FakeFS.deactivate!
     opts = {
       :destination => @destination,
-      :verbose => false
+      :quiet => true,
+      :forreal => true
     }
 
     @a = AndroidSync.new(opts)
@@ -73,7 +71,7 @@ describe AndroidSync do
     destination_files.should =~ source_files
   end
 
-  describe :cleanup do
+  describe "With cleanup" do
 
     before :each do
       @new_destination_files = @d_files.collect { |x| x = "#{@destination}/#{x}" }.each do |s|
@@ -114,7 +112,8 @@ sources:
       opts = {
         :destination => @destination,
         :config => android_sync_yaml,
-        :verbose => false
+        :quiet => true,
+        :forreal => true
       }
 
       @b = AndroidSync.new(opts)
