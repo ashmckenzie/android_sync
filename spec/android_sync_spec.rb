@@ -24,7 +24,8 @@ describe AndroidSync do
       "show/d.mp3",
       "show/e.mp3",
       "show/f.mp3",
-      "show/g.mp3"
+      "show/g.mp3",
+      "show/and/some/other/directory/g.mp3"
     ]
 
     @source_files = @s_files.collect { |x| x = "#{@source}/#{x}" }.each do |s|

@@ -105,11 +105,10 @@ class AndroidSync
     @new_files.each do |file|
       destination_file = "#{@new_files_destination}/#{file.gsub(/#{Regexp.escape("#{@source}/")}/, '')}"
       next if File.exists?(destination_file)
-      puts "+ Copying '#{File.basename(file)}' to '#{destination_file}'" unless @quiet
-      puts "DEBUG: Copying '#{file} to '#{destination_file}'" if @debug
+      file_parent = destination_file.split(/\//)[0...-1].join('/')
+      puts "+ Copying '#{File.basename(file)}' to '#{file_parent}'" unless @quiet
+      puts "DEBUG: Copying '#{file} to '#{file_parent}'" if @debug
       if @forreal
-        file_parent = destination_file.split(/\//)[0...-1].join('/')
-        puts "DEBUG: file_parent=[#{file_parent}]" if @debug
         if ! File.exist?(file_parent)
           FileUtils.mkdir_p(file_parent)
         end
