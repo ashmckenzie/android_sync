@@ -94,7 +94,7 @@ class AndroidSync
 
   def sync_new_files
 
-    new_files_destination_parent = '/' + @new_files_destination.split(/\//)[0...-1].join('/')
+    new_files_destination_parent = '/' + @new_files_destination.split(/\//)[0...-1].join('/').ltrim('/')
 
     raise "Base destination directory '#{new_files_destination_parent}' does not exist" unless File.directory?(new_files_destination_parent)
 
