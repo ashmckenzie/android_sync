@@ -40,12 +40,7 @@ class AndroidSync
 
     @config = YAML.load_file(@config_file)
 
-    @source = nil
     @destination = nil
-    
-    @new_files = []
-    @new_files_destination = []
-
   end
 
   def run # :nodoc:
@@ -60,17 +55,14 @@ class AndroidSync
   # Sync a bunch of stuff to an Android device (essentially a mounted volume)
   #
   def perform_sync(source, destination, keep=nil)
-    @new_files, @new_files_destination = get_new_files_to_sync(source, destination, keep)
-    sync_new_files
-    cleanup_files_we_dont_want_to_keep unless keep.nil?
+    new_files, new_files_destination = get_new_files_to_sync(source, destination, keep)
+    sync_new_files(source, new_files, new_files_destination)
+    cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination) unless keep.nil?
   end
 
   # Get a list of source files to examine for sycning
   #
   def get_new_files_to_sync(source, destination, keep=nil)
-
-    @source = source
-    @destination = destination
 
     # This variable is eval'd using entries setup in the YAML file
     #
@@ -78,7 +70,7 @@ class AndroidSync
 
     new_files_destination = eval('"' + destination + '"').rtrim('/')
 
-    all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }
+    all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.reverse
 
     unless keep.nil?
       new_files = all_new_files[0...keep]
@@ -92,18 +84,18 @@ class AndroidSync
 
   private
 
-  def sync_new_files
+  def sync_new_files(source, new_files, new_files_destination)
 
-    new_files_destination_parent = '/' + @new_files_destination.split(/\//)[0...-1].join('/').ltrim('/')
+    new_files_destination_parent = '/' + new_files_destination.split(/\//)[0...-1].join('/').ltrim('/')
 
     raise "Base destination directory '#{new_files_destination_parent}' does not exist" unless File.directory?(new_files_destination_parent)
 
     puts "DEBUG: new_files_destination_parent=[#{new_files_destination_parent}]" if @debug
 
-    FileUtils.mkdir_p(@new_files_destination) if ! File.directory?(@new_files_destination) and @forreal
+    FileUtils.mkdir_p(new_files_destination) if ! File.directory?(new_files_destination) and @forreal
 
-    @new_files.each do |file|
-      destination_file = "#{@new_files_destination}/#{file.gsub(/#{Regexp.escape("#{@source}/")}/, '')}"
+    new_files.each do |file|
+      destination_file = "#{new_files_destination}/#{file.gsub(/#{Regexp.escape("#{source}/")}/, '')}"
       next if File.exists?(destination_file)
       file_parent = destination_file.split(/\//)[0...-1].join('/')
       puts "+ Copying '#{File.basename(file)}' to '#{file_parent}'" unless @quiet
@@ -118,10 +110,18 @@ class AndroidSync
 
   end
 
-  def cleanup_files_we_dont_want_to_keep
+  def cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination)
 
-    existing_files = Dir.glob("#{@new_files_destination}/**/*").reject { |x| File.directory?(x) }.sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }.reject do |file|
-      @new_files.collect { |x| File.basename(x) }.include?(File.basename(file))
+    source_files = Dir.glob("#{source}/**/*").reject { |x| File.directory?(x) }.collect { |x| x.gsub(/^#{source}\//, '') }.reverse
+    new_files.collect! { |x| x.gsub(/^#{source}\//, '') }
+
+    existing_files = Dir.glob("#{new_files_destination}/**/*").reject do |x|
+      if File.directory?(x)
+        true
+      else
+        file = x.gsub(/^#{@destination_base}/, '')
+        new_files.include?(file) || ! source_files.include?(file)
+      end
     end
 
     existing_files.each do |file|
