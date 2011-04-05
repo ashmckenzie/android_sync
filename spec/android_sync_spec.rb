@@ -28,12 +28,8 @@ describe AndroidSync do
       "show/g.mp3"
     ]
 
-    @source_files = @s_files.collect { |x| x = "#{@source}/#{x}" }.each do |s|
-      f = File.new(s, 'w')
-      f.write('0' * (rand(500) + 500))
-      f.close 
-    end
-
+    @source_files = create_temporary_files(@s_files, @source)
+    
     @d_files = [
       "show/x.mp3",
       "show/y.mp3",
@@ -56,14 +52,14 @@ describe AndroidSync do
     lambda {  AndroidSync.new }.should raise_exception('Destination must be defined')
   end
 
-  it "should return shows to copy from /source/show to /destination/show, keeping last three shows" do
+  it "should return shows to copy from source to destination, keeping last three shows" do
     new_files, new_files_destination = @a.get_new_files_to_sync(@source, @destination, 3)
     source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }
     new_files.should =~ source_files[0...3]
     new_files_destination.should == @destination
   end
 
-  it "should copy shows in /source/show/ to /destination/show/" do
+  it "should copy shows in source to destination" do
     @a.perform_sync(@source, @destination)
 
     destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
@@ -72,14 +68,14 @@ describe AndroidSync do
     destination_files.should =~ source_files
   end
 
-  describe "With existing files in destination that do not exist in /source/show" do
+  describe "With existing files in destination that do not exist in source" do
 
     before :each do
       @new_destination_files = create_temporary_files(@d_files, @destination)
       @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
     end
 
-    it "should sync shows from /source/show into /destination/show, leaving alone existing files in /destination/show", :wip => true do
+    it "should sync shows from source into destination, leaving alone existing files in destination" do
 
       @a.perform_sync(@source, @destination, 3)
 
@@ -89,7 +85,7 @@ describe AndroidSync do
       destination_files.should =~ source_files[0...3].concat(@d_files).sort
     end
 
-    it "should sync shows from /source/show into /destination/show, leaving alone existing files in /destination/show using run()" do
+    it "should sync shows from source into destination, leaving alone existing files in destination using run()" do
 
       opts = {
         :destination => @destination,
@@ -109,7 +105,7 @@ describe AndroidSync do
 
   end
 
-  describe "With existing files in destination that exist in /source/show" do
+  describe "With existing files in destination that exist in source" do
 
     before :each do
       @d_files.unshift 'show/d.mp3'
@@ -117,7 +113,7 @@ describe AndroidSync do
       @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
     end
 
-    it "should sync shows from /source/show into /destination/show, leaving alone existing files in /destination/show but clearing out some shows", :wip => true do
+    it "should sync shows from source into destination, leaving alone existing files in destination but clearing out some shows" do
 
       destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
       source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
@@ -131,7 +127,7 @@ describe AndroidSync do
       destination_files.should =~ source_files[0..3].concat(@d_files).sort
     end
 
-    it "should sync shows from /source/show into /destination/show, leaving alone existing files in /destination/show but clearing out some shows using run()" do
+    it "should sync shows from source into destination, leaving alone existing files in destination but clearing out some shows using run()" do
 
       opts = {
         :destination => @destination,
@@ -160,10 +156,11 @@ end
 
 def create_temporary_files(destination_files, destination)
 
-  files = destination_files.collect { |x| x = "#{destination}/#{x}" }.each do |s|
-    f = File.new(s, 'w')
-    f.write('0' * (rand(500) + 500))
-    f.close
+  files = destination_files.collect { |x| x = "#{destination}/#{x}" }.each do |f|
+    file = File.new(f, 'w')
+    file.write('0' * (rand(500) + 500))
+    file.close
+    sleep(0.6)   # yes, this is lame, but cannot fake ctime any other way :(
   end
 
   files

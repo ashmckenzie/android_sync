@@ -70,7 +70,20 @@ class AndroidSync
 
     new_files_destination = eval('"' + destination + '"').rtrim('/')
 
-    all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.reverse
+    all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.sort do |x, y|
+
+      xx = File.basename(x)
+      yy = File.basename(y)
+
+      r = /(\d+)\.\w+$/
+
+      if xx.match(r)
+        yy.match(r)[1].to_i <=> xx.match(r)[1].to_i
+      else
+        File.stat(y).ctime.to_i <=> File.stat(x).ctime.to_i
+      end
+
+    end
 
     unless keep.nil?
       new_files = all_new_files[0...keep]
