@@ -2,4 +2,13 @@ sources:
   - label: The Changelog
     source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/The Changelog'
     destination: "#{destination_base}/Podcasts/The Changelog"
+    sort:
+      type: regex
+      regex: "Episode (\d\.\d\.\d) -"
+    keep: 5
+  - label: Railscasts
+    source: '/Users/ash/Music/iTunes/iTunes Music/Podcasts/Railscasts'
+    destination: "#{destination_base}/Podcasts/Railscasts"
+    sort:
+      type: ctime
     keep: 5

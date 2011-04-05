@@ -52,100 +52,104 @@ describe AndroidSync do
     lambda {  AndroidSync.new }.should raise_exception('Destination must be defined')
   end
 
-  it "should return shows to copy from source to destination, keeping last three shows" do
-    new_files, new_files_destination = @a.get_new_files_to_sync(@source, @destination, 3)
-    source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }
-    new_files.should =~ source_files[0...3]
-    new_files_destination.should == @destination
-  end
+  describe "Using ctime sort type" do
 
-  it "should copy shows in source to destination" do
-    @a.perform_sync(@source, @destination)
-
-    destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-    source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
-
-    destination_files.should =~ source_files
-  end
-
-  describe "With existing files in destination that do not exist in source" do
-
-    before :each do
-      @new_destination_files = create_temporary_files(@d_files, @destination)
-      @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
+    it "should return shows to sync" do
+      new_files, new_files_destination = @a.get_new_files_to_sync(@source, @destination, { :sort => { 'sort_type' => 'ctime' }, :keep => 3 })
+      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }
+      new_files.should =~ source_files[0...3]
+      new_files_destination.should == @destination
     end
 
-    it "should sync shows from source into destination, leaving alone existing files in destination" do
-
-      @a.perform_sync(@source, @destination, 3)
+    it "should sync" do
+      @a.perform_sync(@source, @destination, { :sort => { 'sort_type' => 'ctime' } })
 
       destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
 
-      destination_files.should =~ source_files[0...3].concat(@d_files).sort
+      destination_files.should =~ source_files
     end
 
-    it "should sync shows from source into destination, leaving alone existing files in destination using run()" do
+    describe "With existing files in destination that do not exist in source" do
 
-      opts = {
-        :destination => @destination,
-        :config => write_out_temporary_yaml,
-        :quiet => true,
-        :forreal => true
-      }
+      before :each do
+        @new_destination_files = create_temporary_files(@d_files, @destination)
+        @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
+      end
 
-      @b = AndroidSync.new(opts)
-      @b.run
+      it "should sync, leaving alone existing files in destination" do
 
-      destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+        @a.perform_sync(@source, @destination, { :sort => { 'sort_type' => 'ctime' }, :keep => 3 })
 
-      destination_files.should =~ source_files[0...3].concat(@d_files).sort
+        destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
+        source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+
+        destination_files.should =~ source_files[0...3].concat(@d_files).sort
+      end
+
+      it "should sync, leaving alone existing files in destination using run()" do
+
+        opts = {
+          :destination => @destination,
+          :config => write_out_temporary_yaml,
+          :quiet => true,
+          :forreal => true
+        }
+
+        @b = AndroidSync.new(opts)
+        @b.run
+
+        destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
+        source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+
+        destination_files.should =~ source_files[0...3].concat(@d_files).sort
+      end
+
     end
 
-  end
+    describe "With existing files in destination that exist in source" do
 
-  describe "With existing files in destination that exist in source" do
+      before :each do
+        @d_files.unshift 'show/d.mp3'
+        @new_destination_files = create_temporary_files(@d_files, @destination)
+        @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
+      end
 
-    before :each do
-      @d_files.unshift 'show/d.mp3'
-      @new_destination_files = create_temporary_files(@d_files, @destination)
-      @new_destination_files.should =~ Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }
+      it "should sync, leaving alone existing files in destination but clearing out some shows" do
+
+        destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
+        source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+
+        @a.perform_sync(@source, @destination, { :sort => { 'sort_type' => 'ctime' }, :keep => 3 })
+
+        destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
+        source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+
+        @d_files.shift
+        destination_files.should =~ source_files[0..3].concat(@d_files).sort
+      end
+
+      it "should sync, leaving alone existing files in destination but clearing out some shows using run()" do
+
+        opts = {
+          :destination => @destination,
+          :config => write_out_temporary_yaml,
+          :quiet => true,
+          :forreal => true
+        }
+
+        @b = AndroidSync.new(opts)
+        @b.run
+
+        destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
+        source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
+
+        @d_files.shift
+        destination_files.should =~ source_files[0..3].concat(@d_files).sort
+      end
+
     end
 
-    it "should sync shows from source into destination, leaving alone existing files in destination but clearing out some shows" do
-
-      destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
-
-      @a.perform_sync(@source, @destination, 3)
-
-      destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
-
-      @d_files.shift
-      destination_files.should =~ source_files[0..3].concat(@d_files).sort
-    end
-
-    it "should sync shows from source into destination, leaving alone existing files in destination but clearing out some shows using run()" do
-
-      opts = {
-        :destination => @destination,
-        :config => write_out_temporary_yaml,
-        :quiet => true,
-        :forreal => true
-      }
-
-      @b = AndroidSync.new(opts)
-      @b.run
-
-      destination_files = Dir.glob("#{@destination}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@destination}/")}/, '') }
-      source_files = Dir.glob("#{@source}/**/*").reject { |x| File.directory?(x) }.reverse.collect { |x| x = x.gsub(/#{Regexp.escape("#{@source}/")}/, '') }
-
-      @d_files.shift
-      destination_files.should =~ source_files[0..3].concat(@d_files).sort
-    end
-        
   end
 
   after :each do

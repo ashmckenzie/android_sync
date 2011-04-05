@@ -47,22 +47,22 @@ class AndroidSync
     puts unless @quiet
     @config['sources'].each do |s|
       puts "- Looking at #{s['label']}" unless @quiet
-      perform_sync(s['source'].rtrim('/'), s['destination'].rtrim('/'), s['keep'])
+      perform_sync(s['source'].rtrim('/'), s['destination'].rtrim('/'), { :sort => s['sort'], :keep => s['keep'] })
       puts unless @quiet
     end
   end
 
   # Sync a bunch of stuff to an Android device (essentially a mounted volume)
   #
-  def perform_sync(source, destination, keep=nil)
-    new_files, new_files_destination = get_new_files_to_sync(source, destination, keep)
+  def perform_sync(source, destination, options)
+    new_files, new_files_destination = get_new_files_to_sync(source, destination, options)
     sync_new_files(source, new_files, new_files_destination)
-    cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination) unless keep.nil?
+    cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination) unless options[:keep].nil?
   end
 
   # Get a list of source files to examine for sycning
   #
-  def get_new_files_to_sync(source, destination, keep=nil)
+  def get_new_files_to_sync(source, destination, options)
 
     # This variable is eval'd using entries setup in the YAML file
     #
@@ -71,22 +71,21 @@ class AndroidSync
     new_files_destination = eval('"' + destination + '"').rtrim('/')
 
     all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.sort do |x, y|
-
-      xx = File.basename(x)
-      yy = File.basename(y)
-
-      r = /(\d+)\.\w+$/
-
-      if xx.match(r)
-        yy.match(r)[1].to_i <=> xx.match(r)[1].to_i
+      if options[:sort] && options[:sort]['type'] == 'regex'
+        if xx = x.match(options[:sort]['regex']) && yy = y.match(options[:sort]['regex'])
+          xx[1] <=> yy[1]
+        end
+      elsif options[:sort] && options[:sort]['type'] == 'ctime'
+        File.stat(x).ctime.to_i <=> File.stat(y).ctime.to_i
       else
-        File.stat(y).ctime.to_i <=> File.stat(x).ctime.to_i
+        x <=> y
       end
-
     end
 
-    unless keep.nil?
-      new_files = all_new_files[0...keep]
+    all_new_files.reverse!
+
+    unless options[:keep].nil?
+      new_files = all_new_files[0...options[:keep]]
     else
       new_files = all_new_files
     end
