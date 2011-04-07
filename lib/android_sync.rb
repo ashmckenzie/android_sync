@@ -70,7 +70,7 @@ class AndroidSync
 
     new_files_destination = eval('"' + destination + '"').rtrim('/')
 
-    all_new_files = Dir.glob("#{source.rtrim('/')}/**/*").reject { |x| File.directory?(x) }.sort do |x, y|
+    all_new_files = get_files(source).sort do |x, y|
       if options[:sort] && options[:sort]['type'] == 'regex'
         if xx = x.match(options[:sort]['regex']) && yy = y.match(options[:sort]['regex'])
           xx[1] <=> yy[1]
@@ -95,6 +95,10 @@ class AndroidSync
   end
 
   private
+
+  def get_files(where)
+    Dir.glob("#{where.rtrim('/')}/**/*").reject { |x| File.directory?(x) }
+  end
 
   def sync_new_files(source, new_files, new_files_destination)
 
