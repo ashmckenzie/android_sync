@@ -74,7 +74,7 @@ describe AndroidSync do
     describe "With existing files in destination that exist in source" do
 
       before :each do
-        @d_files.unshift 'show/d.mp3'
+        @d_files.unshift 'show/source_d_100.mp3'
         @new_destination_files = create_temporary_files(@d_files, @destination)
         @new_destination_files.should =~ get_files(@destination)
       end
@@ -92,12 +92,20 @@ describe AndroidSync do
         get_files_minus_base(@destination).reverse.should =~ get_files_minus_base(@source).reverse[0..3].concat(@d_files).sort
       end
     end
+
+    it "should allow a specific source label to be executed" do
+      pending('to be implemented') do
+      end
+    end
+
   end
 
   context "Using regex sort type" do
 
     it "should return shows to sync", :wip => true do
-      new_files, new_files_destination = @a.get_new_files_to_sync(@source, @destination, { :sort => { 'type' => 'regex', 'regex' => '' }, :keep => 3 })
+      new_files, new_files_destination = @a.get_new_files_to_sync(@source, @destination, {
+        :sort => { 'type' => 'regex' }, :keep => 3 }
+      )
       new_files.should =~ get_files(@source).sort { |x, y| File::stat(y).ctime <=> File::stat(x).ctime }[0...3]
       new_files_destination.should == @destination
     end
@@ -113,7 +121,7 @@ def create_temporary_files(destination_files, destination)
     file = File.new(f, 'w')
     file.write('0' * (rand(500) + 500))
     file.close
-    sleep(0.8)   # yes, this is lame, but cannot fake ctime any other way :(
+    sleep(0.8)   # yes, this is lame, but cannot fake ctime with fakefs :(
   end
   files
 end

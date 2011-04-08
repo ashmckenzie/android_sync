@@ -71,9 +71,13 @@ class AndroidSync
     new_files_destination = eval('"' + destination + '"').rtrim('/')
 
     all_new_files = get_files(source).sort do |x, y|
-      if options[:sort] && options[:sort]['type'] == 'regex'
-        if xx = x.match(options[:sort]['regex']) && yy = y.match(options[:sort]['regex'])
-          xx[1] <=> yy[1]
+
+      if options[:sort] && options[:sort]['type'] == 'regex' && options[:sort]['block']
+        block = lambda { |str| eval(options[:sort]['block'], binding) }
+        begin
+          block.call(x) <=> block.call(y)
+        rescue Exception => e
+          puts "#{e} source=[#{source}], destination=[#{new_files_destination}]"
         end
       elsif options[:sort] && options[:sort]['type'] == 'ctime'
         File.stat(x).ctime.to_i <=> File.stat(y).ctime.to_i
