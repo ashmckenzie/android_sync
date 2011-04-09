@@ -77,7 +77,8 @@ class AndroidSync
         begin
           block.call(x) <=> block.call(y)
         rescue Exception => e
-          puts "#{e} source=[#{source}], destination=[#{new_files_destination}]"
+          #puts "#{e} source=[#{source}], destination=[#{new_files_destination}]"
+          y <=> x
         end
       elsif options[:sort] && options[:sort]['type'] == 'ctime'
         File.stat(x).ctime.to_i <=> File.stat(y).ctime.to_i
@@ -127,24 +128,23 @@ class AndroidSync
         FileUtils.cp(file, destination_file)
       end
     end
-
   end
 
   def cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination)
 
-    source_files = Dir.glob("#{source}/**/*").reject { |x| File.directory?(x) }.collect { |x| x.gsub(/^#{source}\//, '') }.reverse
-    new_files.collect! { |x| x.gsub(/^#{source}\//, '') }
+    source_files = Dir.glob("#{source}/**/*").reject { |x| File.directory?(x) }.collect { |x| x.gsub(/#{Regexp.escape("#{source}/")}/, '') }.reverse
+    new_files.collect! { |x| x.gsub(/#{Regexp.escape("#{source}/")}/, '') }
 
-    existing_files = Dir.glob("#{new_files_destination}/**/*").reject do |x|
+    files_to_remove = Dir.glob("#{new_files_destination}/**/*").reject do |x|
       if File.directory?(x)
         true
       else
-        file = x.gsub(/^#{@destination_base}/, '')
+        file = x.gsub(/^#{new_files_destination}\//, '')
         new_files.include?(file) || ! source_files.include?(file)
       end
     end
 
-    existing_files.each do |file|
+    files_to_remove.each do |file|
       puts "! Removing '#{file}'" unless @quiet
       FileUtils.rm_f(file) if @forreal
     end
