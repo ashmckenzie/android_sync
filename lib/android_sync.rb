@@ -46,8 +46,14 @@ class AndroidSync
   def run # :nodoc:
     puts unless @quiet
     @config['sources'].each do |s|
+      options = {
+        :sort => s['sort'],
+        :keep => s['keep'],
+        :exclude => s['exclude'],
+        :extensions => s['extensions']
+      }    
       puts "- Looking at #{s['label']}" unless @quiet
-      perform_sync(s['source'].rtrim('/'), s['destination'].rtrim('/'), { :sort => s['sort'], :keep => s['keep'] })
+      perform_sync(s['source'].rtrim('/'), s['destination'].rtrim('/'), options)
       puts unless @quiet
     end
   end
@@ -56,7 +62,7 @@ class AndroidSync
   #
   def perform_sync(source, destination, options)
     new_files, new_files_destination = get_new_files_to_sync(source, destination, options)
-    sync_new_files(source, new_files, new_files_destination)
+    sync_new_files(source, new_files, new_files_destination, options)
     cleanup_files_we_dont_want_to_keep(source, new_files, new_files_destination) unless options[:keep].nil?
   end
 
@@ -102,10 +108,12 @@ class AndroidSync
   private
 
   def get_files(where)
-    Dir.glob("#{where.rtrim('/')}/**/*").reject { |x| File.directory?(x) }
+    Dir.glob("#{where.rtrim('/')}/**/*").reject do |x| 
+      File.directory?(x)
+    end
   end
 
-  def sync_new_files(source, new_files, new_files_destination)
+  def sync_new_files(source, new_files, new_files_destination, options)
 
     new_files_destination_parent = '/' + new_files_destination.split(/\//)[0...-1].join('/').ltrim('/')
 
@@ -117,7 +125,21 @@ class AndroidSync
 
     new_files.each do |file|
       destination_file = "#{new_files_destination}/#{file.gsub(/#{Regexp.escape("#{source}/")}/, '')}"
+
       next if File.exists?(destination_file)
+
+      if options[:exclude]
+        next if file.match(options[:exclude])
+      end
+
+      if options[:extensions]
+        if options[:extensions]['include']
+          next unless File.extname(file).ltrim('.').match(options[:extensions]['include'])
+        elsif options[:extensions]['exclude']
+          next if File.extname(file).ltrim('.').match(options[:extensions]['exclude'])
+        end
+      end
+
       file_parent = destination_file.split(/\//)[0...-1].join('/')
       puts "+ Copying '#{File.basename(file)}' to '#{file_parent}'" unless @quiet
       puts "DEBUG: Copying '#{file} to '#{file_parent}'" if @debug
