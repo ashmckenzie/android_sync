@@ -126,8 +126,7 @@ class AndroidSync
     new_files.each do |file|
       destination_file = "#{new_files_destination}/#{file.gsub(/#{Regexp.escape("#{source}/")}/, '')}"
 
-      next if File.exists?(destination_file)
-
+      next if File.exists?(destination_file) && File.stat(destination_file).size == File.stat(file).size
       if options[:exclude]
         next if file.match(options[:exclude])
       end
