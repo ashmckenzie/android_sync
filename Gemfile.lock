@@ -15,6 +15,7 @@ GEM
     simplecov (0.4.1)
       simplecov-html (~> 0.4.3)
     simplecov-html (0.4.3)
+    trollop (1.16.2)
 
 PLATFORMS
   ruby
@@ -24,3 +25,4 @@ DEPENDENCIES
   rcov
   rspec
   simplecov
+  trollop
